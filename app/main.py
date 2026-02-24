@@ -4,8 +4,40 @@ from bson import ObjectId
 from dotenv import dotenv_values
 from .config import db 
 from .models import *
+from . import consumer
 
-app = FastAPI()
+#******************************RabbitMQ stuff******************************************
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    tasks = []
+
+    try:
+        print("Starting background RabbitMQ consumers")
+
+        # notifications consumer (inserts into notifications_collection)
+        ml_task = asyncio.create_task(consumer.consume())
+        tasks.append(ml_task)
+
+        app.state.consumer_tasks = tasks
+    except Exception as e:
+        print(f"ERROR: Failed to start consumer tasks: {e}")
+
+    try:
+        yield
+    finally:
+        for t in getattr(app.state, "consumer_tasks", []):
+            try:
+                t.cancel()
+            except Exception:
+                pass
+        # Await cancellation
+        for t in getattr(app.state, "consumer_tasks", []):
+            try:
+                await t
+            except asyncio.CancelledError:
+                pass
+
+app = FastAPI(title="ML API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,10 +46,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-shirts_db = db["shirts"]
-
-weighting = {}
 
 @app.get("/health")
 def health():
@@ -30,27 +58,45 @@ async def get_recom(c1: str,c2: str,c3: str,c4: str, itemid: str, yn: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching recommendation: {e}")
 
-def start_train(itemid, c1, c2, c3, c4, yn):
-    find = db["shirts"].find_one({"_id": ObjectId(itemid)})
-    item = item_return(find)
+def start_train(recomData):
+    itemIDs = [ recomData["itemid1"], recomData["itemid2"], recomData["itemid3"], recomData["itemid4"] ]
+    var_list = [recomData["c1"], recomData["c2"], recomData["c3"], recomData["c4"]]
+    feedback = recomData["feedback"]
     weight = 0.5
-    var_list = [c1,c2,c3,c4]
-    up = update_values(var_list, itemid, item, yn, weight)
+    up = update_values(var_list, itemIDs, feedback, weight)
     return up
 
-def update_values(var_list, itemid, item, yn, weight):
-    updates = {}
-    for var in var_list:
-        old = item.get(var)
-        updates[var] = old + (yn*weight)
+def update_values(var_list, itemIDs, feedback, weight):
+    last_updated_item = None
 
-    result = shirts_db.update_one(
-        {'_id': ObjectId(itemid)},
-        {'$set': updates}
-    )
-    print("Matched documents:", result.matched_count)
-    print("Modified documents:", result.modified_count)
-    return item
+    for itemid in itemIDs:
+        if not ObjectId.is_valid(itemid):
+            continue
+
+        obj_id = ObjectId(itemid)
+        for collection_name in db.list_collection_names():
+            collection = db[collection_name]
+            item = collection.find_one({"_id": obj_id})
+            if not item:
+                continue
+
+            updates = {}
+            for var in var_list:
+                old = item.get(var)
+                updates[var] = old + (yn*weight)
+
+            if not updates:
+                continue
+
+            result = collection.update_one(
+                {"_id": obj_id},
+                {"$set": updates}
+            )
+            print(f"[{collection_name}] Matched documents:", result.matched_count)
+            print(f"[{collection_name}] Modified documents:", result.modified_count)
+            last_updated_item = collection.find_one({"_id": obj_id})
+
+    return last_updated_item
 
 def chooseRandVar():
     
