@@ -3,17 +3,16 @@ from aio_pika import ExchangeType
 import asyncio
 import json
 import os
+from .config import db 
+from bson import ObjectId
 from dotenv import load_dotenv
 from datetime import datetime
-from .main import start_train
 
 load_dotenv()
 
 RABBIT_URL = os.getenv("RABBIT_URL")
 EXCHANGE_NAME = os.getenv("EXCHANGE_NAME", "recom_topic")
 QUEUE_NAME = os.getenv("RECOM_QUEUE", "recom_queue")
-
-from .configurations import notifications_collection
 
 if not RABBIT_URL:
     raise RuntimeError("RABBIT_URL is not set. Export it or add it to a .env file.")
@@ -37,6 +36,7 @@ async def _consume_once():
                 async for message in q:
                     async with message.process():
                         try:
+                            print(f"In")
                             raw = message.body
                             if isinstance(raw, (bytes, bytearray)):
                                 raw = raw.decode("utf-8")
@@ -44,7 +44,6 @@ async def _consume_once():
                             payload = json.loads(raw)
 
                             event_type = None
-                            user_id = None
                             data = None
 
                             if isinstance(payload, dict):
@@ -61,7 +60,7 @@ async def _consume_once():
                         except json.JSONDecodeError as e:
                             print("Invalid JSON in message body:", e)
                         except Exception as e:
-                            print("Failed to process notification message:", e)
+                            print("Failed to process recom message:", e)
         except asyncio.CancelledError:
             print("Recom consumer cancelled")
 
@@ -77,6 +76,46 @@ async def consume():
         except Exception as exc:
             print(f"Recom consumer loop error: {exc}; retrying in 5s")
             await asyncio.sleep(5)
+
+def start_train(recomData):
+    itemIDs = [ recomData["rec1_id"], recomData["rec2_id"], recomData["rec3_id"], recomData["rec4_id"] ]
+    var_list = [recomData["attr1"], recomData["attr2"], recomData["attr3"], recomData["attr4"]]
+    feedback = recomData["feedback"]
+    weight = 0.5
+    up = update_values(var_list, itemIDs, feedback, weight)
+    return up
+
+def update_values(var_list, itemIDs, feedback, weight):
+    last_updated_item = None
+
+    for itemid in itemIDs:
+        if not ObjectId.is_valid(itemid):
+            continue
+
+        obj_id = ObjectId(itemid)
+        for collection_name in db.list_collection_names():
+            collection = db[collection_name]
+            item = collection.find_one({"_id": obj_id})
+            if not item:
+                continue
+
+            updates = {}
+            for var in var_list:
+                old = item.get(var)
+                updates[var] = old + (feedback*weight)
+
+            if not updates:
+                continue
+
+            result = collection.update_one(
+                {"_id": obj_id},
+                {"$set": updates}
+            )
+            print(f"[{collection_name}] Matched documents:", result.matched_count)
+            print(f"[{collection_name}] Modified documents:", result.modified_count)
+            last_updated_item = collection.find_one({"_id": obj_id})
+
+    return last_updated_item
 
 
 if __name__ == "__main__":

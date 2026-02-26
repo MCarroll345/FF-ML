@@ -3,8 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from bson import ObjectId
 from dotenv import dotenv_values
 from .config import db 
+import aio_pika
+import json
+import asyncio
 from .models import *
 from . import consumer
+from contextlib import asynccontextmanager
 
 #******************************RabbitMQ stuff******************************************
 @asynccontextmanager
@@ -59,8 +63,8 @@ async def get_recom(c1: str,c2: str,c3: str,c4: str, itemid: str, yn: int):
         raise HTTPException(status_code=500, detail=f"Error fetching recommendation: {e}")
 
 def start_train(recomData):
-    itemIDs = [ recomData["itemid1"], recomData["itemid2"], recomData["itemid3"], recomData["itemid4"] ]
-    var_list = [recomData["c1"], recomData["c2"], recomData["c3"], recomData["c4"]]
+    itemIDs = [ recomData["rec1_id"], recomData["rec2_id"], recomData["rec3_id"], recomData["rec4_id"] ]
+    var_list = [recomData["attr1"], recomData["attr2"], recomData["attr3"], recomData["attr4"]]
     feedback = recomData["feedback"]
     weight = 0.5
     up = update_values(var_list, itemIDs, feedback, weight)
