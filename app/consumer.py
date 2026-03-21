@@ -7,8 +7,29 @@ from .config import db
 from bson import ObjectId
 from dotenv import load_dotenv
 from datetime import datetime
+import random
 
 load_dotenv()
+
+ATTR_LIST = [
+  'light',
+  'dark',
+  'bright',
+  'warm',
+  'cool',
+  'lightweight',
+  'fancy',
+  'casual',
+  'business',
+  'lounge',
+  'evening',
+  'minimalist',
+  'vintage',
+  'modern',
+  'soft',
+  'comfortable',
+  'layerable',
+]
 
 RABBIT_URL = os.getenv("RABBIT_URL")
 EXCHANGE_NAME = os.getenv("EXCHANGE_NAME", "recom_topic")
@@ -55,7 +76,7 @@ async def _consume_once():
                                     data = data.get("data") or {}
 
                             result = start_train(data)
-                            print(f"Feedback taken and processed: {data}")
+                            #print(f"Feedback taken and processed: {data}")
 
                         except json.JSONDecodeError as e:
                             print("Invalid JSON in message body:", e)
@@ -78,9 +99,13 @@ async def consume():
             await asyncio.sleep(5)
 
 def start_train(recomData):
-    itemIDs = [ recomData["rec1_id"], recomData["rec2_id"], recomData["rec3_id"], recomData["rec4_id"] ]
-    var_list = [recomData["attr1"], recomData["attr2"], recomData["attr3"], recomData["attr4"]]
-    feedback = recomData["feedback"]
+    print(f"Received recom data: {recomData}")
+    itemIDs = [recomData[f"rec{i}_id"] for i in range(1, 5) if f"rec{i}_id" in recomData]
+    print(f"Received recom data: {itemIDs}")
+    var_list = [recomData[f"attr{i}"] for i in range(1, 5) if f"attr{i}" in recomData]
+    print(f"Received recom data: {var_list}")
+    feedback = [recomData["feedback"]]
+    print(f"Received recom data: {feedback}")
     weight = 0.5
     up = update_values(var_list, itemIDs, feedback, weight)
     return up
@@ -102,7 +127,15 @@ def update_values(var_list, itemIDs, feedback, weight):
             updates = {}
             for var in var_list:
                 old = item.get(var)
-                updates[var] = old + (feedback*weight)
+                updates[var] = old + (feedback[0] * weight)
+
+            if feedback[0] == -1:
+                for rando in range(1, 4):
+                    rand_attr = random.choice(ATTR_LIST)
+                    if rand_attr not in var_list:
+                        old = item.get(rand_attr)
+                        updates[rand_attr] = old + (1 * weight)
+                        print(f"Updated {rand_attr}")
 
             if not updates:
                 continue
