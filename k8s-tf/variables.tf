@@ -1,19 +1,25 @@
 variable "name" {
   description = "The name to use for all resources created by this module"
   type        = string
-  default     = "ff-recom-kube"
+  default     = "FF-ml"
+}
+
+variable "smallname" {
+  description = "The name to use for all resources created by this module"
+  type        = string
+  default     = "ffml"
 }
 
 variable "image" {
   description = "The Docker image to run"
   type        = string
-  default     = "mcarroll321/ff-recom"
+  default     = "mcarroll321/ff-ml"
 }
 
 variable "container_port" {
   description = "The port the Docker image listens on"
   type        = number
-  default     = 8000
+  default     = 8002
 }
 
 variable "replicas" {
