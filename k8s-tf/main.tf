@@ -13,9 +13,12 @@ terraform {
   }
 }
 
+# ──────────────────────────────────────────────
+# Remote state + data sources
+# ──────────────────────────────────────────────
+
 data "terraform_remote_state" "eks" {
   backend = "local"
-
   config = {
     path = "../aws-tf/terraform.tfstate"
   }
@@ -25,26 +28,43 @@ data "aws_eks_cluster" "cluster" {
   name = data.terraform_remote_state.eks.outputs.cluster_name
 }
 
+locals {
+  oidc_issuer         = data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer
+  oidc_issuer_stripped = replace(local.oidc_issuer, "https://", "")
+}
+
+data "aws_iam_openid_connect_provider" "eks" {
+  url = local.oidc_issuer
+}
+
+# ──────────────────────────────────────────────
+# Providers
+# ──────────────────────────────────────────────
+
 provider "kubernetes" {
   host                   = data.aws_eks_cluster.cluster.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
-    args = [
-      "eks",
-      "get-token",
-      "--cluster-name",
-      data.aws_eks_cluster.cluster.name
-    ]
+    args        = ["eks", "get-token", "--cluster-name", data.aws_eks_cluster.cluster.name]
   }
 }
 
+# ──────────────────────────────────────────────
+# IAM — KEDA CloudWatch permissions via IRSA
+# ──────────────────────────────────────────────
+
+
+# ──────────────────────────────────────────────
+# Deployment + service
+# ──────────────────────────────────────────────
+
 resource "kubernetes_deployment" "nginx" {
   metadata {
-    name = "ffrecomapp"
+    name = "${var.smallname}app"
     labels = {
-      App = "FF-recom-app"
+      App = "${var.name}-app"
     }
   }
 
@@ -52,22 +72,22 @@ resource "kubernetes_deployment" "nginx" {
     replicas = 2
     selector {
       match_labels = {
-        App = "FF-recom-app"
+        App = "${var.name}-app"
       }
     }
     template {
       metadata {
         labels = {
-          App = "FF-recom-app"
+          App = "${var.name}-app"
         }
       }
       spec {
         container {
-          image = "mcarroll321/ff-recom"
-          name  = "ffrecomcontainer"
+          image = var.image
+          name  = "${var.smallname}container"
 
           port {
-            container_port = 8000
+            container_port = var.container_port
           }
 
           resources {
@@ -88,17 +108,16 @@ resource "kubernetes_deployment" "nginx" {
 
 resource "kubernetes_service" "nginx" {
   metadata {
-    name = "ffrecomservice"
+    name = "${var.smallname}service"
   }
   spec {
     selector = {
-      App = kubernetes_deployment.nginx.spec.0.template.0.metadata[0].labels.App
+      App = kubernetes_deployment.nginx.spec[0].template[0].metadata[0].labels.App
     }
     port {
-      port        = 8000
-      target_port = 8000
+      port        = 80
+      target_port = var.container_port
     }
-
     type = "LoadBalancer"
   }
 }

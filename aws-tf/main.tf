@@ -6,33 +6,24 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.20.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
 }
 
-resource "aws_eks_cluster" "cluster" {
-  name     = var.name
-  role_arn = aws_iam_role.cluster.arn
-  version  = "1.34"
-
-  vpc_config {
-    subnet_ids = data.aws_subnets.default.ids
-  }
-
-  access_config {
-    authentication_mode = "API"
-  }
-
-  # Ensure that IAM Role permissions are created before and deleted after
-  # the EKS Cluster. Otherwise, EKS will not be able to properly delete
-  # EKS managed EC2 infrastructure such as Security Groups.
-  depends_on = [
-    aws_iam_role_policy_attachment.AmazonEKSClusterPolicy
-  ]
+import {
+  to = aws_eks_cluster.cluster
+  id = "FitFinder"
 }
 
-resource "aws_iam_role" "cluster" {
-  name               = "${var.name}-cluster-role"
-  assume_role_policy = data.aws_iam_policy_document.cluster_assume_role.json
+data "aws_eks_cluster" "cluster" {
+  name = "FitFinder"
+}
+
+data "aws_iam_openid_connect_provider" "eks" {
+  url = data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer
 }
 
 data "aws_iam_policy_document" "cluster_assume_role" {
@@ -46,13 +37,8 @@ data "aws_iam_policy_document" "cluster_assume_role" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "AmazonEKSClusterPolicy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.cluster.name
-}
-
 resource "aws_eks_node_group" "nodes" {
-  cluster_name    = aws_eks_cluster.cluster.name
+  cluster_name    = data.aws_eks_cluster.cluster.name
   node_group_name = var.name
   node_role_arn   = aws_iam_role.node_group.arn
   subnet_ids      = data.aws_subnets.default.ids
@@ -72,22 +58,6 @@ resource "aws_eks_node_group" "nodes" {
     aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly,
     aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy,
   ]
-}
-
-resource "aws_eks_access_entry" "test" {
-  cluster_name  = aws_eks_cluster.cluster.name
-  principal_arn = "arn:aws:iam::906510885253:user/FF-User"
-}
-
-resource "aws_eks_access_policy_association" "example_admin" {
-  cluster_name  = aws_eks_cluster.cluster.name
-  principal_arn = "arn:aws:iam::906510885253:user/FF-User"
-
-  policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-
-  access_scope {
-    type = "cluster"
-  }
 }
 
 resource "aws_iam_role" "node_group" {

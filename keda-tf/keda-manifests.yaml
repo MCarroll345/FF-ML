@@ -1,0 +1,37 @@
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: aws-cloudwatch-auth
+  namespace: default
+spec:
+  podIdentity:
+    provider: aws
+    identityOwner: keda
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ffclothesapp-network-scaler
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: ffclothesapp
+  minReplicaCount: 2
+  maxReplicaCount: 10
+  cooldownPeriod: 120
+  triggers:
+    - type: aws-cloudwatch
+      authenticationRef:
+        name: aws-cloudwatch-auth
+      metricType: AverageValue
+      metadata:
+        namespace: AWS/EC2
+        expression: "SELECT SUM(NetworkIn) FROM \"AWS/EC2\" WHERE AutoScalingGroupName = 'eks-FF-recom-32ce73f7-1d8c-6681-52f9-a1f5e813e739'"
+        metricName: NetworkIn
+        metricStatPeriod: "60"
+        metricCollectionTime: "120"
+        metricStat: Sum
+        targetMetricValue: "100000"
+        minMetricValue: "0"
+        awsRegion: eu-west-1
+        identityOwner: keda
