@@ -17,7 +17,6 @@ ATTR_LIST = [
   'colourful',
   'warm',
   'cool',
-  'light',
   'fancy',
   'casual',
   'business',
