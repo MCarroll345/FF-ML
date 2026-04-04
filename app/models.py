@@ -9,7 +9,6 @@ class ItemClass(BaseModel):
     brand:str
     light:      Optional[int] = None
     dark:       Optional[int] = None
-    bright:     Optional[int] = None
     warm:       Optional[int] = None
     cool:       Optional[int] = None
     fancy:      Optional[int] = None
@@ -20,6 +19,7 @@ class ItemClass(BaseModel):
     vintage:    Optional[int] = None
     modern:     Optional[int] = None
     floral:     Optional[int] = None
+    colourful:  Optional[int] = None
     img_url:str
 
 def item_return(item):
@@ -40,6 +40,7 @@ def item_return(item):
         "vintage": item["vintage"],
         "modern": item["modern"],
         "floral": item["floral"],
+        "colourful": item["colourful"],
         "img_url": item["img_url"]
     }
 
