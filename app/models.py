@@ -29,7 +29,6 @@ def item_return(item):
         "brand": item["brand"],
         "light": item["light"],
         "dark": item["dark"],
-        "bright": item["bright"],
         "warm": item["warm"],
         "cool": item["cool"],
         "fancy": item["fancy"],
