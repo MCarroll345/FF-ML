@@ -14,21 +14,18 @@ load_dotenv()
 ATTR_LIST = [
   'light',
   'dark',
-  'bright',
+  'colourful',
   'warm',
   'cool',
-  'lightweight',
+  'light',
   'fancy',
   'casual',
   'business',
-  'lounge',
   'evening',
   'minimalist',
   'vintage',
   'modern',
-  'soft',
-  'comfortable',
-  'layerable',
+  'floral',
 ]
 
 RABBIT_URL = os.getenv("RABBIT_URL")
