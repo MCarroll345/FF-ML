@@ -12,20 +12,14 @@ class ItemClass(BaseModel):
     bright:     Optional[int] = None
     warm:       Optional[int] = None
     cool:       Optional[int] = None
-    breathable: Optional[int] = None
-    cozy:       Optional[int] = None
-    lightweight:Optional[int] = None
     fancy:      Optional[int] = None
     casual:     Optional[int] = None
     business:   Optional[int] = None
-    lounge:     Optional[int] = None
     evening:    Optional[int] = None
     minimalist: Optional[int] = None
     vintage:    Optional[int] = None
     modern:     Optional[int] = None
-    soft:       Optional[int] = None
-    comfortable:Optional[int] = None
-    layerable:  Optional[int] = None
+    floral:     Optional[int] = None
     img_url:str
 
 def item_return(item):
@@ -38,18 +32,14 @@ def item_return(item):
         "bright": item["bright"],
         "warm": item["warm"],
         "cool": item["cool"],
-        "lightweight": item["lightweight"],
         "fancy": item["fancy"],
         "casual": item["casual"],
         "business": item["business"],
-        "lounge": item["lounge"],
         "evening": item["evening"],
         "minimalist": item["minimalist"],
         "vintage": item["vintage"],
         "modern": item["modern"],
-        "soft": item["soft"],
-        "comfortable": item["comfortable"],
-        "layerable": item["layerable"],
+        "floral": item["floral"],
         "img_url": item["img_url"]
     }
 
