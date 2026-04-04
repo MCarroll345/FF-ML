@@ -15,6 +15,7 @@ ATTR_LIST = [
   'light',
   'dark',
   'colourful',
+  'bright',
   'warm',
   'cool',
   'fancy',

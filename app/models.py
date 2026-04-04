@@ -9,6 +9,7 @@ class ItemClass(BaseModel):
     brand:str
     light:      Optional[int] = None
     dark:       Optional[int] = None
+    bright:     Optional[int] = None
     warm:       Optional[int] = None
     cool:       Optional[int] = None
     fancy:      Optional[int] = None
@@ -29,6 +30,7 @@ def item_return(item):
         "brand": item["brand"],
         "light": item["light"],
         "dark": item["dark"],
+        "bright": item["bright"],
         "warm": item["warm"],
         "cool": item["cool"],
         "fancy": item["fancy"],
