@@ -32,18 +32,14 @@ def item_return(item):
         "bright": item["bright"],
         "warm": item["warm"],
         "cool": item["cool"],
-        "lightweight": item["lightweight"],
         "fancy": item["fancy"],
         "casual": item["casual"],
         "business": item["business"],
-        "lounge": item["lounge"],
         "evening": item["evening"],
         "minimalist": item["minimalist"],
         "vintage": item["vintage"],
         "modern": item["modern"],
-        "soft": item["soft"],
-        "comfortable": item["comfortable"],
-        "layerable": item["layerable"],
+        "floral": item["floral"],
         "img_url": item["img_url"]
     }
 
