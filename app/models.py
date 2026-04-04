@@ -12,20 +12,14 @@ class ItemClass(BaseModel):
     bright:     Optional[int] = None
     warm:       Optional[int] = None
     cool:       Optional[int] = None
-    breathable: Optional[int] = None
-    cozy:       Optional[int] = None
-    lightweight:Optional[int] = None
     fancy:      Optional[int] = None
     casual:     Optional[int] = None
     business:   Optional[int] = None
-    lounge:     Optional[int] = None
     evening:    Optional[int] = None
     minimalist: Optional[int] = None
     vintage:    Optional[int] = None
     modern:     Optional[int] = None
-    soft:       Optional[int] = None
-    comfortable:Optional[int] = None
-    layerable:  Optional[int] = None
+    floral:     Optional[int] = None
     img_url:str
 
 def item_return(item):
