@@ -34,3 +34,6 @@ uvicorn==0.36.0
 python-dotenv>=1,<2 
 pymongo==4.15.3
 aio-pika==9.6.1
+pytest-cov
+pytest-asyncio
+httpx

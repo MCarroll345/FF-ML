@@ -101,7 +101,7 @@ def start_train(recomData):
     print(f"Received recom data: {itemIDs}")
     var_list = [recomData[f"attr{i}"] for i in range(1, 5) if f"attr{i}" in recomData]
     print(f"Received recom data: {var_list}")
-    feedback = [recomData["feedback"]]
+    feedback = recomData["feedback"]
     print(f"Received recom data: {feedback}")
     weight = 0.5
     up = update_values(var_list, itemIDs, feedback, weight)
@@ -124,9 +124,9 @@ def update_values(var_list, itemIDs, feedback, weight):
             updates = {}
             for var in var_list:
                 old = item.get(var)
-                updates[var] = old + (feedback[0] * weight)
+                updates[var] = old + (feedback * weight)
 
-            if feedback[0] == -1:
+            if feedback == -1:
                 for rando in range(1, 4):
                     rand_attr = random.choice(ATTR_LIST)
                     if rand_attr not in var_list:

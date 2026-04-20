@@ -87,7 +87,7 @@ def update_values(var_list, itemIDs, feedback, weight):
             updates = {}
             for var in var_list:
                 old = item.get(var)
-                updates[var] = old + (yn*weight)
+                updates[var] = old + (feedback * weight)
 
             if not updates:
                 continue
